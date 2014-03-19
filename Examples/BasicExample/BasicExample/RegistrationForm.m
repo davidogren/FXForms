@@ -61,6 +61,13 @@
              
              @{FXFormFieldKey: @"about", FXFormFieldType: FXFormFieldTypeLongText},
              
+             // this is an option field with a nil option
+             
+             @{FXFormFieldKey: @"notifications",
+               FXFormFieldHeader: @"Preferences",
+               FXFormFieldOptions: @[@"Email", @"Push Notifications", @"Email & Push Notifications"],
+               FXFormFieldNilOption: @"No Notifications"},
+             
              //we want to add a section header here, so we use another config dictionary
              
              @{FXFormFieldKey: @"termsAndConditions", FXFormFieldHeader: @"Legal"},

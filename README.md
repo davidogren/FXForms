@@ -246,6 +246,12 @@ static NSString *const FXFormFieldOptions = @"options";
 For any field type, you can supply an array of supported values, which will override the standard field with a checklist of options to be selected instead. The options can be NSStrings, NSNumbers or any other object type. If you use a custom object for the values, you can provide a `-(NSString *)fieldDescription;` method to control how it is displayed in the list. See Form field options below for more details.
 
 ```objc
+static NSString *const FXFormFieldNilOption = @"nilOption";
+```
+
+When using a FXFormFieldTypeOption, you may want to allow nil values. By providing a NSString value for the FXFormFieldNilOption, an extra option will be selectable that assigns the nil value to the underlying field value.
+
+```objc
 static NSString *const FXFormFieldValueTransformer = @"valueTransformer";
 ```
 

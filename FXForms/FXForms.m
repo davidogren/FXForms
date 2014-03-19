@@ -533,6 +533,11 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     _options = [options copy];
 }
 
+- (void)setNilOption:(NSString *)nilOption
+{
+    _nilOption = [nilOption copy];
+}
+
 - (void)performActionWithResponder:(UIResponder *)responder sender:(id)sender
 {
     if (self.action)
@@ -578,6 +583,14 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     {
         _field = field;
         NSMutableArray *fields = [NSMutableArray array];
+        
+        if (field.nilOption)
+        {
+            [fields addObject:@{FXFormFieldKey: FXFormFieldNilOption,
+                                FXFormFieldTitle: field.nilOption,
+                                FXFormFieldType: FXFormFieldTypeOption}];
+        }
+        
         NSInteger index = 0;
         for (id option in field.options)
         {
@@ -594,7 +607,11 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 - (id)valueForKey:(NSString *)key
 {
     NSInteger index = NSNotFound;
-    if ([self.field isIndexedType])
+    if ([key isEqualToString:FXFormFieldNilOption])
+    {
+        return @(self.field.value == nil);
+    }
+    else if ([self.field isIndexedType])
     {
         index = [self.field.value integerValue];
     }
@@ -608,7 +625,11 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 - (void)setValue:(id)value forKey:(NSString *)key
 {
     value = self.field.options[[key integerValue]];
-    if ([self.field isIndexedType])
+    if ([key isEqualToString:FXFormFieldNilOption])
+    {
+        self.field.value = nil;
+    }
+    else if ([self.field isIndexedType])
     {
         self.field.value = @([self.field.options indexOfObject:value]);
     }
