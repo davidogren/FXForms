@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CC33ED46190E309A00451C49 /* AddressForm.m in Sources */ = {isa = PBXBuildFile; fileRef = CC33ED45190E309A00451C49 /* AddressForm.m */; };
 		CCA3D70E1906475900A13FBE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCA3D70D1906475900A13FBE /* Foundation.framework */; };
 		CCA3D7101906475900A13FBE /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCA3D70F1906475900A13FBE /* CoreGraphics.framework */; };
 		CCA3D7121906475900A13FBE /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCA3D7111906475900A13FBE /* UIKit.framework */; };
@@ -16,10 +17,12 @@
 		CCA3D7481906487500A13FBE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CCA3D7471906487500A13FBE /* AppDelegate.m */; };
 		CCA3D74B190648A800A13FBE /* FormViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = CCA3D74A190648A800A13FBE /* FormViewController.m */; };
 		CCA3D74D1906496400A13FBE /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCA3D74C1906496400A13FBE /* Images.xcassets */; };
-		CCA3D75119064AF000A13FBE /* Form.m in Sources */ = {isa = PBXBuildFile; fileRef = CCA3D75019064AF000A13FBE /* Form.m */; };
+		CCA3D75119064AF000A13FBE /* InformationForm.m in Sources */ = {isa = PBXBuildFile; fileRef = CCA3D75019064AF000A13FBE /* InformationForm.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CC33ED44190E309A00451C49 /* AddressForm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AddressForm.h; sourceTree = "<group>"; };
+		CC33ED45190E309A00451C49 /* AddressForm.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AddressForm.m; sourceTree = "<group>"; };
 		CCA3D70A1906475900A13FBE /* OneToManyExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OneToManyExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCA3D70D1906475900A13FBE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		CCA3D70F1906475900A13FBE /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -36,8 +39,8 @@
 		CCA3D749190648A800A13FBE /* FormViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FormViewController.h; sourceTree = "<group>"; };
 		CCA3D74A190648A800A13FBE /* FormViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FormViewController.m; sourceTree = "<group>"; };
 		CCA3D74C1906496400A13FBE /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
-		CCA3D74F19064AF000A13FBE /* Form.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Form.h; sourceTree = "<group>"; };
-		CCA3D75019064AF000A13FBE /* Form.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Form.m; sourceTree = "<group>"; };
+		CCA3D74F19064AF000A13FBE /* InformationForm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InformationForm.h; sourceTree = "<group>"; };
+		CCA3D75019064AF000A13FBE /* InformationForm.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = InformationForm.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,8 +132,10 @@
 		CCA3D74E19064AD600A13FBE /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				CCA3D74F19064AF000A13FBE /* Form.h */,
-				CCA3D75019064AF000A13FBE /* Form.m */,
+				CCA3D74F19064AF000A13FBE /* InformationForm.h */,
+				CCA3D75019064AF000A13FBE /* InformationForm.m */,
+				CC33ED44190E309A00451C49 /* AddressForm.h */,
+				CC33ED45190E309A00451C49 /* AddressForm.m */,
 			);
 			name = Models;
 			sourceTree = "<group>";
@@ -198,7 +203,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CCA3D75119064AF000A13FBE /* Form.m in Sources */,
+				CC33ED46190E309A00451C49 /* AddressForm.m in Sources */,
+				CCA3D75119064AF000A13FBE /* InformationForm.m in Sources */,
 				CCA3D7481906487500A13FBE /* AppDelegate.m in Sources */,
 				CCA3D74B190648A800A13FBE /* FormViewController.m in Sources */,
 				CCA3D73F190647BB00A13FBE /* FXForms.m in Sources */,
@@ -335,6 +341,7 @@
 				CCA3D7381906475900A13FBE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

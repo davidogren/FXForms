@@ -39,7 +39,9 @@
 
 static NSString *const FXFormFieldKey = @"key";
 static NSString *const FXFormFieldType = @"type";
+static NSString *const FXFormFieldTemplate = @"template";
 static NSString *const FXFormFieldClass = @"class";
+static NSString *const FXFormFieldClassInCollection = @"classInCollection";
 static NSString *const FXFormFieldCell = @"cell";
 static NSString *const FXFormFieldTitle = @"title";
 static NSString *const FXFormFieldPlaceholder = @"placeholder";
@@ -68,7 +70,10 @@ static NSString *const FXFormFieldTypeDate = @"date";
 static NSString *const FXFormFieldTypeTime = @"time";
 static NSString *const FXFormFieldTypeDateTime = @"datetime";
 static NSString *const FXFormFieldTypeImage = @"image";
-static NSString *const FXFormFieldTypeOneToMany = @"onetomany";
+
+static NSString *const FXFormFieldTemplateToMany = @"tomany";
+static NSString *const FXFormFieldTemplateToManyOption = @"tomanyoption";
+static NSString *const FXFormFieldTemplateToManyAdd = @"tomanyadd";
 
 #endif
 
@@ -103,6 +108,7 @@ static NSString *const FXFormFieldTypeOneToMany = @"onetomany";
 @property (nonatomic, readonly) id<FXForm> form;
 @property (nonatomic, readonly) NSString *key;
 @property (nonatomic, readonly) NSString *type;
+@property (nonatomic, readonly) NSString *template;
 @property (nonatomic, readonly) NSString *title;
 @property (nonatomic, readonly) id placeholder;
 @property (nonatomic, readonly) NSArray *options;

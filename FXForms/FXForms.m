@@ -382,6 +382,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 @interface FXFormField ()
 
 @property (nonatomic, strong) Class valueClass;
+@property (nonatomic, strong) Class valueClassInCollection;
 @property (nonatomic, strong) Class cell;
 @property (nonatomic, readwrite) NSString *key;
 @property (nonatomic, readwrite) NSArray *options;
@@ -730,6 +731,11 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     _valueClass = valueClass;
 }
 
+- (void)setClassInCollection:(Class)valueClassInCollection
+{
+    _valueClassInCollection = valueClassInCollection;
+}
+
 - (void)setInline:(BOOL)isInline
 {
     _isInline = isInline;
@@ -1007,24 +1013,35 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 
 - (instancetype)initWithField:(FXFormField *)field
 {
+    NSAssert([field isCollectionType], @"FXFormTemplateOneToMany only works with collection properties.");
     if ((self = [super init]))
     {
         _field = field;
         
         NSMutableArray *fields = [NSMutableArray array];
-        if ([field isCollectionType])
+
+        for (NSUInteger i = 0; i < [field.value count]; i++)
         {
-            for (NSUInteger i = 0; i < [field.value count]; i++)
+            NSMutableDictionary *formField = [NSMutableDictionary dictionaryWithDictionary:@{FXFormFieldTemplate: FXFormFieldTemplateToManyOption,
+                                                                                             FXFormFieldKey: [@(i) description],
+                                                                                             FXFormFieldTitle: @""}];
+            if (field.valueClassInCollection)
             {
-                [fields addObject:@{FXFormFieldKey: [@(i) description],
-                                    FXFormFieldTitle: @"",
-                                    FXFormFieldCell: [FXFormTextFieldCell class],
-                                    FXFormFieldType: FXFormFieldTypeOneToMany}];
+                formField[FXFormFieldClass] = field.valueClassInCollection;
+                if (field.valueClassInCollection == [NSString class]) {
+                    formField[FXFormFieldType] = FXFormFieldTypeText;
+                }
             }
+
+            [fields addObject:formField];
         }
         
-        [fields addObject:@{FXFormFieldTitle: @"Add",
-                            FXFormFieldType: FXFormFieldTypeOneToMany}];
+        if (self.field.valueClassInCollection)
+        {
+            // only show an add button if we know the type of elements in the collection
+            // if not, we can't instantiate new values correctly
+            [fields addObject:@{FXFormFieldTemplate: FXFormFieldTemplateToManyAdd, FXFormFieldTitle: NSLocalizedString(@"Add", nil)}];
+        }
         _fields = [fields copy];
     }
     return self;
@@ -1054,6 +1071,13 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     return NO;
 }
 
+- (BOOL)insertNewValue
+{
+    if (!self.field.valueClassInCollection) return NO;
+    id value = [[self.field.valueClassInCollection alloc] init]; // TODO: allow overriding constructor, e.g. for NSManagedObjects
+    return [self insertValue:value];
+}
+
 - (BOOL)insertValue:(id)value
 {
     BOOL copyNeeded = ([NSStringFromClass(self.field.valueClass) rangeOfString:@"Mutable"].location == NSNotFound);
@@ -1061,7 +1085,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     id collection = self.field.value ?: [[self.field.valueClass alloc] init];
     if (copyNeeded) collection = [collection mutableCopy];
     
-    [collection insertObject:value atIndex:[collection count]-1];
+    [collection insertObject:value atIndex:[collection count]];
     
     if (copyNeeded) collection = [collection copy];
     self.field.value = collection;
@@ -1100,7 +1124,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
             [sections addObjectsFromArray:subsections];
             section = nil;
         }
-        else if ([field.type isEqualToString:FXFormFieldTypeOneToMany] && field.isInline)
+        else if ([field.template isEqualToString:FXFormFieldTemplateToMany])
         {
             id<FXForm> subform = [[FXOneToManyForm alloc] initWithField:field];
             NSArray *subsections = [FXFormSection sectionsWithForm:subform controller:formController];
@@ -1473,7 +1497,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
-    if ([field.type isEqualToString:FXFormFieldTypeOneToMany])
+    if ([field.template isEqualToString:FXFormFieldTemplateToManyOption] || [field.template isEqualToString:FXFormFieldTemplateToManyAdd])
     {
         return YES;
     }
@@ -1484,10 +1508,15 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
     
-    if ([field.type isEqualToString:FXFormFieldTypeOneToMany])
+    if ([field.template isEqualToString:FXFormFieldTemplateToManyOption])
     {
-        return (indexPath.row == [tableView numberOfRowsInSection:indexPath.section]-1) ? UITableViewCellEditingStyleInsert : UITableViewCellEditingStyleDelete;
+        return UITableViewCellEditingStyleDelete;
     }
+    else if ([field.template isEqualToString:FXFormFieldTemplateToManyAdd])
+    {
+        return UITableViewCellEditingStyleInsert;
+    }
+    
     return UITableViewCellEditingStyleNone;
 }
 
@@ -1495,7 +1524,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
     
-    if (editingStyle == UITableViewCellEditingStyleDelete && [field.type isEqualToString:FXFormFieldTypeOneToMany])
+    if (editingStyle == UITableViewCellEditingStyleDelete)
     {
         [tableView beginUpdates];
         
@@ -1507,17 +1536,29 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
         
         [tableView endUpdates];
     }
-    else if (editingStyle == UITableViewCellEditingStyleInsert && [field.type isEqualToString:FXFormFieldTypeOneToMany])
+    else if (editingStyle == UITableViewCellEditingStyleInsert)
     {
-        [tableView beginUpdates];
-        
-        if ([(FXOneToManyForm *)field.form insertValue:@"New phonenumber !"]) // TODO: use field.value instead of title
+        if ([(FXOneToManyForm *)field.form insertNewValue])
         {
+            [tableView beginUpdates];
+            
             self.sections = [FXFormSection sectionsWithForm:self.form controller:self];
             [tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+            
+            [tableView endUpdates];
+            
+            UITableViewCell<FXFormFieldCell> *cell = (UITableViewCell<FXFormFieldCell> *)[tableView cellForRowAtIndexPath:indexPath];
+            
+            if ([cell.field isSubform])
+            {
+                [tableView selectRowAtIndexPath:indexPath animated:YES scrollPosition:UITableViewScrollPositionNone];
+                [tableView.delegate tableView:tableView didSelectRowAtIndexPath:indexPath];
+            }
+            else
+            {
+                [cell becomeFirstResponder];
+            }
         }
-        
-        [tableView endUpdates];
     }
 }
 
@@ -1552,6 +1593,13 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 {
     //forward to cell
     UITableViewCell<FXFormFieldCell> *cell = (UITableViewCell<FXFormFieldCell> *)[tableView cellForRowAtIndexPath:indexPath];
+    
+    if (cell.editingStyle == UITableViewCellEditingStyleInsert)
+    {
+        [self tableView:tableView commitEditingStyle:cell.editingStyle forRowAtIndexPath:indexPath];
+        return;
+    }
+    
     if ([cell respondsToSelector:@selector(didSelectWithTableView:controller:)])
     {
         [cell didSelectWithTableView:tableView controller:[self tableViewController]];
@@ -1699,6 +1747,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
         self.tableView = [[UITableView alloc] initWithFrame:[UIScreen mainScreen].applicationFrame
                                                       style:UITableViewStyleGrouped];
         self.tableView.editing = YES;
+        self.tableView.allowsSelectionDuringEditing = YES;
     }
     if (!self.tableView.superview)
     {

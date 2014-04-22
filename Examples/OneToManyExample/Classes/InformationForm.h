@@ -9,8 +9,10 @@
 #import <UIKit/UIKit.h>
 #import "FXForms.h"
 
-@interface Form : NSObject <FXForm>
+@interface InformationForm : NSObject <FXForm>
 
-@property (nonatomic, strong) NSArray *phoneNumbers;
+@property (nonatomic, copy) NSArray *phoneNumbers;
+@property (nonatomic, copy) NSArray *addresses;
+@property (nonatomic, copy) NSArray *shippingAddresses;
 
 @end

@@ -8,7 +8,7 @@
 
 #import "FormViewController.h"
 
-#import "Form.h"
+#import "InformationForm.h"
 
 @interface FormViewController ()
 
@@ -21,7 +21,7 @@
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self)
     {
-        self.formController.form = [[Form alloc] init];
+        self.formController.form = [[InformationForm alloc] init];
     }
     return self;
 }
