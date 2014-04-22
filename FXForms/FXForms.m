@@ -576,6 +576,10 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     {
         return [self valueDescription:self.options[index]];
     }
+    else if ([self isCollectionType])
+    {
+        return [self valueDescription:[self.value objectAtIndex:index]];
+    }
     return nil;
 }
 
@@ -991,6 +995,83 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 @end
 
 
+@interface FXOneToManyForm : NSObject <FXForm>
+
+@property (nonatomic, strong) FXFormField *field;
+@property (nonatomic, strong) NSArray *fields;
+
+@end
+
+
+@implementation FXOneToManyForm
+
+- (instancetype)initWithField:(FXFormField *)field
+{
+    if ((self = [super init]))
+    {
+        _field = field;
+        
+        NSMutableArray *fields = [NSMutableArray array];
+        if ([field isCollectionType])
+        {
+            for (NSUInteger i = 0; i < [field.value count]; i++)
+            {
+                [fields addObject:@{FXFormFieldKey: [@(i) description],
+                                    FXFormFieldTitle: @"",
+                                    FXFormFieldCell: [FXFormTextFieldCell class],
+                                    FXFormFieldType: FXFormFieldTypeOneToMany}];
+            }
+        }
+        
+        [fields addObject:@{FXFormFieldTitle: @"Add",
+                            FXFormFieldType: FXFormFieldTypeOneToMany}];
+        _fields = [fields copy];
+    }
+    return self;
+}
+
+- (id)valueForKey:(NSString *)key
+{
+    NSInteger index = [key integerValue];
+    id value = (index == NSNotFound)? nil: [self.field.value objectAtIndex:index];
+    return value;
+}
+
+- (BOOL)deleteValue:(id)value
+{
+    BOOL copyNeeded = ([NSStringFromClass(self.field.valueClass) rangeOfString:@"Mutable"].location == NSNotFound);
+    
+    id collection = self.field.value ?: [[self.field.valueClass alloc] init];
+    if (copyNeeded) collection = [collection mutableCopy];
+ 
+    NSUInteger index = [collection indexOfObject:value];
+    if (index != NSNotFound) {
+        [collection removeObjectAtIndex:index];
+        if (copyNeeded) collection = [collection copy];
+        self.field.value = collection;
+        return YES;
+    }
+    return NO;
+}
+
+- (BOOL)insertValue:(id)value
+{
+    BOOL copyNeeded = ([NSStringFromClass(self.field.valueClass) rangeOfString:@"Mutable"].location == NSNotFound);
+    
+    id collection = self.field.value ?: [[self.field.valueClass alloc] init];
+    if (copyNeeded) collection = [collection mutableCopy];
+    
+    [collection insertObject:value atIndex:[collection count]-1];
+    
+    if (copyNeeded) collection = [collection copy];
+    self.field.value = collection;
+    
+    return YES;
+}
+
+@end
+
+
 @interface FXFormSection : NSObject
 
 + (NSArray *)sectionsWithForm:(id<FXForm>)form controller:(FXFormController *)formController;
@@ -1014,6 +1095,14 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
         if ([field.options count] && field.isInline)
         {
             id<FXForm> subform = [[FXOptionsForm alloc] initWithField:field];
+            NSArray *subsections = [FXFormSection sectionsWithForm:subform controller:formController];
+            if (![[subsections firstObject] header]) [[subsections firstObject] setHeader:field.header ?: field.title];
+            [sections addObjectsFromArray:subsections];
+            section = nil;
+        }
+        else if ([field.type isEqualToString:FXFormFieldTypeOneToMany] && field.isInline)
+        {
+            id<FXForm> subform = [[FXOneToManyForm alloc] initWithField:field];
             NSArray *subsections = [FXFormSection sectionsWithForm:subform controller:formController];
             if (![[subsections firstObject] header]) [[subsections firstObject] setHeader:field.header ?: field.title];
             [sections addObjectsFromArray:subsections];
@@ -1381,6 +1470,57 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     }
 }
 
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    FXFormField *field = [self fieldForIndexPath:indexPath];
+    if ([field.type isEqualToString:FXFormFieldTypeOneToMany])
+    {
+        return YES;
+    }
+    return NO;
+}
+
+- (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    FXFormField *field = [self fieldForIndexPath:indexPath];
+    
+    if ([field.type isEqualToString:FXFormFieldTypeOneToMany])
+    {
+        return (indexPath.row == [tableView numberOfRowsInSection:indexPath.section]-1) ? UITableViewCellEditingStyleInsert : UITableViewCellEditingStyleDelete;
+    }
+    return UITableViewCellEditingStyleNone;
+}
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    FXFormField *field = [self fieldForIndexPath:indexPath];
+    
+    if (editingStyle == UITableViewCellEditingStyleDelete && [field.type isEqualToString:FXFormFieldTypeOneToMany])
+    {
+        [tableView beginUpdates];
+        
+        if ([(FXOneToManyForm *)field.form deleteValue:field.value])
+        {
+            self.sections = [FXFormSection sectionsWithForm:self.form controller:self];
+            [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        }
+        
+        [tableView endUpdates];
+    }
+    else if (editingStyle == UITableViewCellEditingStyleInsert && [field.type isEqualToString:FXFormFieldTypeOneToMany])
+    {
+        [tableView beginUpdates];
+        
+        if ([(FXOneToManyForm *)field.form insertValue:@"New phonenumber !"]) // TODO: use field.value instead of title
+        {
+            self.sections = [FXFormSection sectionsWithForm:self.form controller:self];
+            [tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        }
+        
+        [tableView endUpdates];
+    }
+}
+
 #pragma mark -
 #pragma mark Delegate methods
 
@@ -1558,6 +1698,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     {
         self.tableView = [[UITableView alloc] initWithFrame:[UIScreen mainScreen].applicationFrame
                                                       style:UITableViewStyleGrouped];
+        self.tableView.editing = YES;
     }
     if (!self.tableView.superview)
     {
@@ -1806,9 +1947,11 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     self.textField.minimumFontSize = FXFormLabelMinFontSize(self.textLabel);
     self.textField.textColor = [UIColor colorWithRed:0.275f green:0.376f blue:0.522f alpha:1.000f];
     self.textField.delegate = self;
+    self.textField.clearButtonMode = UITextFieldViewModeWhileEditing;
     [self.contentView addSubview:self.textField];
     
-    [self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self.textField action:NSSelectorFromString(@"becomeFirstResponder")]];
+    // TODO: doublecheck why this is needed
+    //[self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self.textField action:NSSelectorFromString(@"becomeFirstResponder")]];
 }
 
 - (void)dealloc

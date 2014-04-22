@@ -68,6 +68,7 @@ static NSString *const FXFormFieldTypeDate = @"date";
 static NSString *const FXFormFieldTypeTime = @"time";
 static NSString *const FXFormFieldTypeDateTime = @"datetime";
 static NSString *const FXFormFieldTypeImage = @"image";
+static NSString *const FXFormFieldTypeOneToMany = @"onetomany";
 
 #endif
 
