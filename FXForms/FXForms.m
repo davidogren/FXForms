@@ -672,13 +672,24 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     if (FXFormCanGetValueForKey(self.form, self.key))
     {
         id value = [(NSObject *)self.form valueForKey:self.key];
-        if (!value && (([self.valueClass conformsToProtocol:@protocol(FXForm)] &&
-                        ![self.valueClass isSubclassOfClass:NSClassFromString(@"NSManagedObject")]) ||
-                       [self.valueClass isSubclassOfClass:[UIViewController class]]))
+
+        if (!value)
         {
-            value = [[self.valueClass alloc] init];
-            FXFormSetValueForKey(self.form, value, self.key);
+            NSString *selector = [NSString stringWithFormat:@"newInstanceFor%@%@", [[self.key substringToIndex:1] uppercaseString], [self.key substringFromIndex:1]];
+            if ([self.form respondsToSelector:NSSelectorFromString(selector)])
+            {
+                value = [(NSObject *)self.form valueForKey:selector];
+                FXFormSetValueForKey(self.form, value, self.key);
+            }
+            else if (([self.valueClass conformsToProtocol:@protocol(FXForm)] &&
+                      ![self.valueClass isSubclassOfClass:NSClassFromString(@"NSManagedObject")]) ||
+                     [self.valueClass isSubclassOfClass:[UIViewController class]])
+            {
+                value = [[self.valueClass alloc] init];
+                FXFormSetValueForKey(self.form, value, self.key);
+            }
         }
+        
         return value;
     }
     return nil;
@@ -1073,8 +1084,21 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 
 - (BOOL)insertNewValue
 {
-    if (!self.field.valueClassInCollection) return NO;
-    id value = [[self.field.valueClassInCollection alloc] init]; // TODO: allow overriding constructor, e.g. for NSManagedObjects
+    
+    NSString *key = self.field.key;
+    NSString *selector = [NSString stringWithFormat:@"newInstanceFor%@%@", [[key substringToIndex:1] uppercaseString], [key substringFromIndex:1]];
+
+    id value;
+    if ([self.field.form respondsToSelector:NSSelectorFromString(selector)])
+    {
+        value = [(NSObject *)self.field.form valueForKey:selector];
+    }
+    else
+    {
+        if (!self.field.valueClassInCollection) return NO;
+        value = [[self.field.valueClassInCollection alloc] init];
+    }
+    
     return [self insertValue:value];
 }
 

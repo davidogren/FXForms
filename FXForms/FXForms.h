@@ -99,6 +99,7 @@ static NSString *const FXFormFieldTemplateToManyAdd = @"tomanyadd";
 
 // - (NSDictionary *)<fieldKey>Field
 // - (NSString *)<fieldKey>FieldDescription
+// - (id)newInstanceFor<fieldKey>
 
 @end
 
