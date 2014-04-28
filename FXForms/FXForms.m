@@ -1061,7 +1061,8 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 - (id)valueForKey:(NSString *)key
 {
     NSInteger index = [key integerValue];
-    id value = (index == NSNotFound)? nil: [self.field.value objectAtIndex:index];
+    id values = [self.field.value isKindOfClass:[NSSet class]] ? [self.field.value allObjects] : self.field.value;
+    id value = (index == NSNotFound)? nil: [values objectAtIndex:index];
     return value;
 }
 
@@ -1071,10 +1072,10 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     
     id collection = self.field.value ?: [[self.field.valueClass alloc] init];
     if (copyNeeded) collection = [collection mutableCopy];
- 
-    NSUInteger index = [collection indexOfObject:value];
-    if (index != NSNotFound) {
-        [collection removeObjectAtIndex:index];
+    
+    if ([collection containsObject:value])
+    {
+        [collection removeObject:value];
         if (copyNeeded) collection = [collection copy];
         self.field.value = collection;
         return YES;
@@ -1107,12 +1108,18 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     BOOL copyNeeded = ([NSStringFromClass(self.field.valueClass) rangeOfString:@"Mutable"].location == NSNotFound);
     
     id collection = self.field.value ?: [[self.field.valueClass alloc] init];
-    if (copyNeeded) collection = [collection mutableCopy];
+    if (copyNeeded)
+    {
+        collection = [collection mutableCopy];
+    }
     
-    [collection insertObject:value atIndex:[collection count]];
+    [collection addObject:value];
     
-    if (copyNeeded) collection = [collection copy];
-    self.field.value = collection;
+    if (copyNeeded)
+    {
+        collection = [collection copy];
+        self.field.value = collection;
+    }
     
     return YES;
 }
