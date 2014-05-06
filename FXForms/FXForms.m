@@ -1557,15 +1557,28 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     
     if (editingStyle == UITableViewCellEditingStyleDelete)
     {
-        [tableView beginUpdates];
+        UITableViewCell *currentFirstResponderCell = [self cellContainingView:FXFormsFirstResponder(tableView)];
+        if ([indexPath isEqual:[tableView indexPathForCell:currentFirstResponderCell]])
+        {
+            // resign first responder if the current first responder cell is being deleted.
+            // this prevents a crash when:
+            // 1) the value represented by the cell is deleted through FXOneToManyForm
+            // 2) the cell is deleted from the tableView, triggering resignFirstResponder if it is firstResponder
+            // 3) the cell attempts to save its current value to the value that was deleted in step one
+            [tableView beginUpdates];
+            [FXFormsFirstResponder(currentFirstResponderCell) resignFirstResponder];
+            [tableView endUpdates];
+        }
         
         if ([(FXOneToManyForm *)field.form deleteValue:field.value])
         {
+            [tableView beginUpdates];
+            
             self.sections = [FXFormSection sectionsWithForm:self.form controller:self];
             [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+            
+            [tableView endUpdates];
         }
-        
-        [tableView endUpdates];
     }
     else if (editingStyle == UITableViewCellEditingStyleInsert)
     {
