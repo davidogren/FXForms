@@ -1043,6 +1043,12 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
                     formField[FXFormFieldType] = FXFormFieldTypeText;
                 }
             }
+            
+            if (field.cell)
+            {
+                // allow overriding of FXFormFieldCell
+                formField[FXFormFieldCell] = NSStringFromClass(field.cell);
+            }
 
             [fields addObject:formField];
         }
