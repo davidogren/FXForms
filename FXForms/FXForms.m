@@ -1083,12 +1083,11 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     return NO;
 }
 
-- (BOOL)insertNewValue
+- (id)newValue
 {
-    
     NSString *key = self.field.key;
     NSString *selector = [NSString stringWithFormat:@"newInstanceFor%@%@", [[key substringToIndex:1] uppercaseString], [key substringFromIndex:1]];
-
+    
     id value;
     if ([self.field.form respondsToSelector:NSSelectorFromString(selector)])
     {
@@ -1100,6 +1099,12 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
         value = [[self.field.valueClassInCollection alloc] init];
     }
     
+    return value;
+}
+
+- (BOOL)insertNewValue
+{
+    id value = [self newValue];
     return [self insertValue:value];
 }
 
@@ -1551,6 +1556,8 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     return UITableViewCellEditingStyleNone;
 }
 
+static void *FXFormToManyAddFieldKey = &FXFormToManyAddFieldKey;
+
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
@@ -1580,8 +1587,32 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     }
     else if (editingStyle == UITableViewCellEditingStyleInsert)
     {
-        if ([(FXOneToManyForm *)field.form insertNewValue])
+        id newValue = [(FXOneToManyForm *)field.form newValue];
+        
+        if ([newValue conformsToProtocol:@protocol(FXForm)])
         {
+            // We're adding a new FXForm instance to a collection
+            // Consistent with the HIG, we present this FXForm as a modal viewcontroller
+            
+            FXFormViewController *subcontroller = [[FXFormViewController alloc] init];
+            subcontroller.formController.form = newValue;
+            subcontroller.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel
+                                                                                                           target:self action:@selector(cancel:)];
+
+            subcontroller.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSave
+                                                                                                            target:self action:@selector(save:)];
+            
+            objc_setAssociatedObject(subcontroller.navigationItem.leftBarButtonItem, FXFormToManyAddFieldKey, field, OBJC_ASSOCIATION_RETAIN);
+            objc_setAssociatedObject(subcontroller.navigationItem.rightBarButtonItem, FXFormToManyAddFieldKey, field, OBJC_ASSOCIATION_RETAIN);
+            
+            [[self tableViewController] presentViewController:[[UINavigationController alloc] initWithRootViewController:subcontroller] animated:YES completion:nil];
+        }
+        else if ([(FXOneToManyForm *)field.form insertValue:newValue])
+        {
+            // We're adding a new instance to a collection
+            // This instance can be edited inline, so we insert a new row for it
+            // and let that row becomeFirstResponder
+            
             [tableView beginUpdates];
             
             self.sections = [FXFormSection sectionsWithForm:self.form controller:self];
@@ -1590,18 +1621,45 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
             [tableView endUpdates];
             
             UITableViewCell<FXFormFieldCell> *cell = (UITableViewCell<FXFormFieldCell> *)[tableView cellForRowAtIndexPath:indexPath];
-            
-            if ([cell.field isSubform])
-            {
-                [tableView selectRowAtIndexPath:indexPath animated:YES scrollPosition:UITableViewScrollPositionNone];
-                [tableView.delegate tableView:tableView didSelectRowAtIndexPath:indexPath];
-            }
-            else
-            {
-                [cell becomeFirstResponder];
-            }
+            [cell becomeFirstResponder];
         }
     }
+}
+
+- (void)cancel:(id)sender
+{
+    [[self tableViewController] dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)save:(id)sender
+{
+    FXFormField *field = objc_getAssociatedObject(sender, FXFormToManyAddFieldKey);
+    
+    id<FXForm> newValue = ((FXFormViewController *)[(UINavigationController *)[[self tableViewController] presentedViewController] topViewController]).formController.form;
+    BOOL inserted = [(FXOneToManyForm *)field.form insertValue:newValue];
+
+    [[self tableViewController] dismissViewControllerAnimated:YES completion:
+     ^{
+         if (inserted)
+         {
+             __block NSIndexPath *indexPath;
+             [self enumerateFieldsWithBlock:^(FXFormField *f, NSIndexPath *ip)
+              {
+                  if ([f isEqual:field]) indexPath = ip;
+              }];
+             
+             if (indexPath)
+             {
+                 UITableView *tableView = [self tableView];
+                 [tableView beginUpdates];
+                 
+                 self.sections = [FXFormSection sectionsWithForm:self.form controller:self];
+                 [tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+                 
+                 [tableView endUpdates];
+             }
+         }
+     }];
 }
 
 #pragma mark -
@@ -1610,7 +1668,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
-
+    
     //configure cell before setting field (in case it affects how value is displayed)
     [field.cellConfig enumerateKeysAndObjectsUsingBlock:^(NSString *keyPath, id value, __unused BOOL *stop) {
         [cell setValue:value forKeyPath:keyPath];
