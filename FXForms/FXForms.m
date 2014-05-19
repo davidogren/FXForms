@@ -1074,6 +1074,13 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 
 - (BOOL)deleteValue:(id)value
 {
+    NSString *key = self.field.key;
+    NSString *selector = [NSString stringWithFormat:@"deleteInstanceFor%@%@:", [[key substringToIndex:1] uppercaseString], [key substringFromIndex:1]];
+    
+    if ([self.field.form respondsToSelector:NSSelectorFromString(selector)]) {
+        [self.field.form performSelector:NSSelectorFromString(selector) withObject:value];
+    }
+    
     BOOL copyNeeded = ([NSStringFromClass(self.field.valueClass) rangeOfString:@"Mutable"].location == NSNotFound);
     
     id collection = self.field.value ?: [[self.field.valueClass alloc] init];
@@ -1634,6 +1641,11 @@ static void *FXFormToManyAddFieldKey = &FXFormToManyAddFieldKey;
 
 - (void)cancel:(id)sender
 {
+    FXFormField *field = objc_getAssociatedObject(sender, FXFormToManyAddFieldKey);
+    
+    id<FXForm> newValue = ((FXFormViewController *)[(UINavigationController *)[[self tableViewController] presentedViewController] topViewController]).formController.form;
+    [(FXOneToManyForm *)field.form deleteValue:newValue];
+    
     [[self tableViewController] dismissViewControllerAnimated:YES completion:nil];
 }
 
