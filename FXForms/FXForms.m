@@ -1983,6 +1983,7 @@ static void *FXFormToManyAddFieldKey = &FXFormToManyAddFieldKey;
         else if ([self.field isSubform])
         {
             self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            self.editingAccessoryType = UITableViewCellAccessoryDisclosureIndicator;
         }
         else if ([self.field.type isEqualToString:FXFormFieldTypeBoolean] || [self.field.type isEqualToString:FXFormFieldTypeOption])
         {
