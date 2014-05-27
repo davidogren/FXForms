@@ -337,7 +337,12 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     {
         return YES;
     }
-    
+    //Is it a to-many form?
+    if ([[form.fields valueForKey:@"template"] containsObject:FXFormFieldTemplateToManyOption])
+    {
+        return YES;
+    }
+
     //it will probably crash
     return NO;
 }
@@ -525,6 +530,18 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 - (BOOL)isCollectionType
 {
     for (Class valueClass in @[[NSArray class], [NSSet class], [NSOrderedSet class], [NSIndexSet class], [NSDictionary class]])
+    {
+        if ([self.valueClass isSubclassOfClass:valueClass]) return YES;
+    }
+    return NO;
+}
+
+- (BOOL)isInlineEditableCollectionType
+{
+    if (!self.valueClassInCollection) return NO;
+    //In order to support inline editing we must have a defined order. (And the mutable version of the class
+    //must support replaceObjectAtIndex:withObject:)
+    for (Class valueClass in @[[NSArray class], [NSOrderedSet class]])
     {
         if ([self.valueClass isSubclassOfClass:valueClass]) return YES;
     }
@@ -1039,6 +1056,9 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
             if (field.valueClassInCollection)
             {
                 formField[FXFormFieldClass] = field.valueClassInCollection;
+            }
+            if ([field isInlineEditableCollectionType])
+            {
                 if (field.valueClassInCollection == [NSString class]) {
                     formField[FXFormFieldType] = FXFormFieldTypeText;
                 }
@@ -1053,7 +1073,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
             [fields addObject:formField];
         }
         
-        if (self.field.valueClassInCollection)
+        if ([field isInlineEditableCollectionType] )
         {
             // only show an add button if we know the type of elements in the collection
             // if not, we can't instantiate new values correctly
@@ -1142,6 +1162,28 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     return YES;
 }
 
+-(void)setValue:(id)value forKey:(NSString *)key {
+    NSUInteger index = [key integerValue];
+    
+    
+    BOOL copyNeeded = ([NSStringFromClass(self.field.valueClass) rangeOfString:@"Mutable"].location == NSNotFound);
+    
+    id collection; //Don't have to check for self.field.value for nil if we are already editing
+
+    if (copyNeeded) {
+        collection = [self.field.value mutableCopy];
+    } else {
+        collection = self.field.value;
+    }
+    
+    NSAssert ([collection respondsToSelector:@selector(replaceObjectAtIndex:withObject:)],@"Collection that does not support inline editing is being updated.");
+    [collection replaceObjectAtIndex:index withObject:value];
+
+    if (copyNeeded)
+    {
+        self.field.value = [collection copy];
+    }
+}
 @end
 
 
