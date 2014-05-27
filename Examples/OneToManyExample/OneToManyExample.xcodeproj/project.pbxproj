@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5875E44B1933DE83006C5040 /* OrderForm.m in Sources */ = {isa = PBXBuildFile; fileRef = 5875E44A1933DE83006C5040 /* OrderForm.m */; };
 		CC33ED46190E309A00451C49 /* AddressForm.m in Sources */ = {isa = PBXBuildFile; fileRef = CC33ED45190E309A00451C49 /* AddressForm.m */; };
 		CCA3D70E1906475900A13FBE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCA3D70D1906475900A13FBE /* Foundation.framework */; };
 		CCA3D7101906475900A13FBE /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CCA3D70F1906475900A13FBE /* CoreGraphics.framework */; };
@@ -21,6 +22,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		5875E4491933DE83006C5040 /* OrderForm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OrderForm.h; sourceTree = "<group>"; };
+		5875E44A1933DE83006C5040 /* OrderForm.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OrderForm.m; sourceTree = "<group>"; };
 		CC33ED44190E309A00451C49 /* AddressForm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AddressForm.h; sourceTree = "<group>"; };
 		CC33ED45190E309A00451C49 /* AddressForm.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AddressForm.m; sourceTree = "<group>"; };
 		CCA3D70A1906475900A13FBE /* OneToManyExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OneToManyExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -136,6 +139,8 @@
 				CCA3D75019064AF000A13FBE /* InformationForm.m */,
 				CC33ED44190E309A00451C49 /* AddressForm.h */,
 				CC33ED45190E309A00451C49 /* AddressForm.m */,
+				5875E4491933DE83006C5040 /* OrderForm.h */,
+				5875E44A1933DE83006C5040 /* OrderForm.m */,
 			);
 			name = Models;
 			sourceTree = "<group>";
@@ -207,6 +212,7 @@
 				CCA3D75119064AF000A13FBE /* InformationForm.m in Sources */,
 				CCA3D7481906487500A13FBE /* AppDelegate.m in Sources */,
 				CCA3D74B190648A800A13FBE /* FormViewController.m in Sources */,
+				5875E44B1933DE83006C5040 /* OrderForm.m in Sources */,
 				CCA3D73F190647BB00A13FBE /* FXForms.m in Sources */,
 				CCA3D71A1906475900A13FBE /* main.m in Sources */,
 			);

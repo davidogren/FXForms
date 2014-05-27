@@ -11,8 +11,11 @@
 
 @interface InformationForm : NSObject <FXForm>
 
-@property (nonatomic, copy) NSArray *phoneNumbers;
-@property (nonatomic, copy) NSArray *addresses;
-@property (nonatomic, copy) NSArray *shippingAddresses;
+@property (nonatomic, copy) NSString *companyName;
+@property (nonatomic, strong) NSArray *phoneNumbers;
+@property (nonatomic, strong) NSMutableArray *addresses;
+@property (nonatomic, strong) NSArray *shippingAddresses;
+@property (nonatomic, strong) NSOrderedSet *orders;
+@property (nonatomic, strong) NSMutableDictionary *relatedCompanies;
 
 @end
