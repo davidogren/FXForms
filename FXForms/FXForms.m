@@ -538,7 +538,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 
 - (BOOL)isInlineEditableCollectionType
 {
-    if (!self.valueClassInCollection) return NO;
+    if (!self.valueClassInCollection || !self.isInline) return NO;
     //In order to support inline editing we must have a defined order. (And the mutable version of the class
     //must support replaceObjectAtIndex:withObject:)
     for (Class valueClass in @[[NSArray class], [NSOrderedSet class]])
