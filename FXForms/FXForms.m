@@ -1041,7 +1041,13 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 
 - (instancetype)initWithField:(FXFormField *)field
 {
-    NSAssert([field isCollectionType], @"FXFormTemplateOneToMany only works with collection properties.");
+    // Current collection type support for one-to-many fields:
+    // * NSArrays and NSOrderedSet (and their mutable variants) support display, inline editing, and insert/delete
+    // * NSIndexSet (and NSMutableIndexSet) is not supported at all, pending further research.
+    // * Other collection types support display (and editing via subform), but not inline editing or insert/delete
+    
+    NSAssert([field isCollectionType], @"FXFormTemplateOneToMany only works with collection properties");
+    NSAssert(![field isKindOfClass:[NSIndexSet class]],@"FXFormTemplateOneToMany does not work with NSIndexSet");
     if ((self = [super init]))
     {
         _field = field;
@@ -1087,19 +1093,32 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
 - (id)valueForKey:(NSString *)key
 {
     NSInteger index = [key integerValue];
-    id values = [self.field.value isKindOfClass:[NSSet class]] ? [self.field.value allObjects] : self.field.value;
+    id values;
+    if ([self.field.value isKindOfClass:[NSSet class]])
+    {
+        values = [self.field.value allObjects];
+    }
+    else if ([self.field.value isKindOfClass:[NSDictionary class]])
+    {
+        values = [self.field.value allValues];
+    }
+    else
+    {
+        values = self.field.value;
+    }
     id value = (index == NSNotFound)? nil: [values objectAtIndex:index];
     return value;
 }
 
-- (BOOL)deleteValue:(id)value
-{
+- (BOOL)deleteValue:(id)value atIndex:(NSInteger)index {
     NSString *key = self.field.key;
     NSString *selector = [NSString stringWithFormat:@"deleteInstanceFor%@%@:", [[key substringToIndex:1] uppercaseString], [key substringFromIndex:1]];
     
     if ([self.field.form respondsToSelector:NSSelectorFromString(selector)]) {
         [self.field.form performSelector:NSSelectorFromString(selector) withObject:value];
     }
+    
+    if (index<0) return NO; //Flag that indicates that object does not need to be removed from collection.
     
     BOOL copyNeeded = ([NSStringFromClass(self.field.valueClass) rangeOfString:@"Mutable"].location == NSNotFound);
     
@@ -1108,7 +1127,7 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     
     if ([collection containsObject:value])
     {
-        [collection removeObject:value];
+        [collection removeObjectAtIndex:index];
         if (copyNeeded) collection = [collection copy];
         self.field.value = collection;
         return YES;
@@ -1590,7 +1609,12 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     FXFormField *field = [self fieldForIndexPath:indexPath];
     if ([field.template isEqualToString:FXFormFieldTemplateToManyOption] || [field.template isEqualToString:FXFormFieldTemplateToManyAdd])
     {
-        return YES;
+        NSAssert([field.form isKindOfClass:[FXOneToManyForm class]], @"Parent of onetomany option isn't a one-to-many form when determining editability");
+        FXOneToManyForm *subform = field.form;
+        if ([subform.field isInlineEditableCollectionType])
+        {
+            return YES;
+        }
     }
     return NO;
 }
@@ -1630,7 +1654,7 @@ static void *FXFormToManyAddFieldKey = &FXFormToManyAddFieldKey;
             [FXFormsFirstResponder(currentFirstResponderCell) resignFirstResponder];
         }
         
-        if ([(FXOneToManyForm *)field.form deleteValue:field.value])
+        if ([(FXOneToManyForm *)field.form deleteValue:field.value atIndex:indexPath.row])
         {
             [tableView beginUpdates];
             
@@ -1686,8 +1710,10 @@ static void *FXFormToManyAddFieldKey = &FXFormToManyAddFieldKey;
     FXFormField *field = objc_getAssociatedObject(sender, FXFormToManyAddFieldKey);
     
     id<FXForm> newValue = ((FXFormViewController *)[(UINavigationController *)[[self tableViewController] presentedViewController] topViewController]).formController.form;
-    [(FXOneToManyForm *)field.form deleteValue:newValue];
     
+    //Since non-inline objects are not added to form collection until save, index argument indicates removal is not needed.
+    //We still call deleteValue, however, so that the deleteInstanceFor... callback is made.
+    [(FXOneToManyForm *)field.form deleteValue:newValue atIndex:-1];
     [[self tableViewController] dismissViewControllerAnimated:YES completion:nil];
 }
 
